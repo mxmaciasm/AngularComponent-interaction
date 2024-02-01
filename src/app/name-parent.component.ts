@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-name-parent',
+  //[name]="name" utiliza el setter del hijo
   template: `
     <h2>Master controls {{names.length}} names</h2>
 

@@ -1,17 +1,124 @@
 <!-- https://angular.io/guide/component-interaction -->
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>Passing information from parent to child</title>
-    <base href="/">
-    <style>
-      .to-top {margin-top: 8px; display: block;}
-    </style>
-  </head>
 
-  <body>
-    <app-root></app-root>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <title>Passing information from parent to child</title>
+  <base href="/">
+  <style>
+    .to-top {
+      margin-top: 8px;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <app-root></app-root>
+</body>
 
 </html>
+<!-- 
+Sharing data between child and parent directives and components
+https://angular.io/guide/inputs-outputs#input 
+
+Un patrón común en Angular es compartir datos entre un componente principal y uno o más componentes secundarios. Implemente este patrón con los decoradores @Input() y @Output().
+@Input() y @Output() proporcionan a una componente secundaria una forma de comunicarse con su componente principal
+
+Sending data to a child component   [PARENT -> CHILD] 
+---------------------------------
+@Input() que está en el secundario, permite que un componente principal actualice los datos del componente secundario. Por el contrario, 
+  * Este decorador en el secundario significa que la propiedad puede recibir su valor de su componente principal.
+  * Para usar @Input debe configurar el principal y el secundario
+    Configurando el hijo: Debe importar Input y luego decorar la propiedad con @Input. En el template del secundario se añade {{item}}
+    --------------------
+    {
+      import { Component, Input } from '@angular/core'; // First, import Input
+      export class ItemDetailComponent {
+      @Input() item = ''; // decorate the property with @Input()
+    }
+    Configurando el padre: El siguiente paso es enlazar (bind) la propiedad en la plantilla del componente principal.
+    ----------------------
+    {
+      Use el enlace de propiedades [] para enlazar la propiedad item del elemento secundario a la propiedad currentItem del elemento primario.
+          <app-item-detail [item]="currentItem"></app-item-detail>
+          The target in the square brackets, [], is the property you decorate with @Input() in the child component. The binding source, the part to the right of the equal sign, is the data that the parent component passes to the nested component.
+      En la clase de componente principal, designe un valor para la propiedad currentItem:
+          export class AppComponent {
+            currentItem = 'Television';
+          }
+      
+    }
+
+    BIND
+      -----
+      Para enlazar (bind) a la propiedad de un elemento (como por ejempo la propiedad src del elemento img), escríbalo entre corchetes, [], que identifica la propiedad como una propiedad de destino.
+      Una propiedad de destino es la propiedad DOM a la que desea asignar un valor.
+      Para asignar un valor a una propiedad de destino para la propiedad src del elemento de imagen, escriba el código siguiente:
+          <img alt="item" [src]="itemImageUrl">
+      Los corchetes, [], hacen que Angular evalúe el lado derecho de la asignación como una expresión dinámica. Sin los corchetes, Angular trata el lado derecho como un literal de cadena y establece la propiedad en ese valor estático.
+      Para utilizar un valor booleano para deshabilitar las características de un botón, vincule el atributo DOM deshabilitado a una propiedad booleana de la clase.
+          src/app/app.component.html -> <button type="button" [disabled]="isUnchanged">Disabled Button</button>
+          src/app/app.component.ts  -> isUnchanged = true;
+
+Sending data to a parent component  [CHILD -> PARENT]
+--------------------------------------------------
+
+@Output(), decorador en el secundario, permite que el secundario envíe datos a un componente principal.
+El componente secundario utiliza la propiedad @Output() para generar un evento que notifique al padre el cambio. 
+Para generar un evento, un @Output() debe tener el tipo de EventEmitter, que es una clase en @angular/core que se usa para emitir eventos personalizados.
+{
+  Configuring the child component
+  -------------------------------
+  1. Import Output and EventEmitter in the child component class:
+     import { Output, EventEmitter } from '@angular/core';
+  2. In the component class, decorate a property with @Output(). The following example newItemEvent @Output() has a type of EventEmitter, which means it's an event.
+     @Output() newItemEvent = new EventEmitter<string>();
+       * @Output()	                A decorator function marking the property as a way for data to go from the child to the parent.
+       * newItemEvent	              The name of the @Output().
+       * EventEmitter<string>	      The @Output()'s type.
+       * new EventEmitter<string>()	Tells Angular to create a new event emitter and that the data it emits is of type string.
+  3. Create an addNewItem() method in the same component class:
+        export class ItemOutputComponent {
+        @Output() newItemEvent = new EventEmitter<string>();
+        addNewItem(value: string) {
+          this.newItemEvent.emit(value);
+        }
+      }
+  Configuring the child's template
+  ---------------------------------
+  The child's template has two controls. The first is an HTML <input> with a template reference variable, #newItem, where the user types in an item name. The value property of the #newItem variable stores what the user types into the <input>.
+        <label for="item-input">Add an item:</label>
+      <input type="text" id="item-input" #newItem>
+      <button type="button" (click)="addNewItem(newItem.value)">Add to parent's list</button>
+  The second element is a <button> with a click event binding.
+  The (click) event is bound to the addNewItem() method in the child component class. The addNewItem() method takes as its argument the value of the #newItem.value property.
+
+  Configuring the parent component
+---------------------------------
+    The AppComponent in this example features a list of items in an array and a method for adding more items to the array.
+    export class AppComponent {
+      items = ['item1', 'item2', 'item3', 'item4'];
+
+      addItem(newItem: string) {
+        this.items.push(newItem);
+      }
+    }
+  Configuring the parent's template
+  ---------------------------------
+  1. In the parent's template, bind the parent's method to the child's event.
+  2. Put the child selector, here <app-item-output>, within the parent component's template, app.component.html.
+        <app-item-output (newItemEvent)="addItem($event)"></app-item-output>
+    The event binding, (newItemEvent)='addItem($event)', connects the event in the child, newItemEvent, to the method in the parent, addItem().
+    The $event contains the data that the user types into the <input> in the child template UI.
+    To see the @Output() working, add the following to the parent's template:
+        <ul>
+          <li *ngFor="let item of items">{{item}}</li>
+        </ul>
+    The *ngFor iterates over the items in the items array. When you enter a value in the child's <input> and click the button, the child emits the event and the parent's addItem() method pushes the value to the items array and new item renders in the list.
+
+    ver VoteTakerComponent y VoterComponent
+}
+-->
